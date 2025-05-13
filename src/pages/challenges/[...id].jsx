@@ -23,6 +23,8 @@ import { useRef } from 'react';
 import WriteupModal from '@/components/WriteupModal';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { useSearchParams } from 'next/navigation';
+import ChallengeCard from '@/components/profile/ChallengeCard';
+
 
 // Move styles to a separate useEffect
 function useHighlightStyles() {
@@ -725,6 +727,8 @@ function FlagDialog({ color, title, message }) {
 function PointsModal({ isOpen, setIsOpen, points }) {
   const [visible, setVisible] = useState(false);
   const [fade, setFade] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [likes, setLikes] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -734,6 +738,20 @@ function PointsModal({ isOpen, setIsOpen, points }) {
       setFade(false);
       // setTimeout(() => setVisible(false), 500); // Match the duration of the transition
     }
+
+    const fetchRecommendedChallenges = async () => {
+      setLoading(true);
+      try {
+        const response = await request(`${process.env.NEXT_PUBLIC_API_URL}/challenges/dash/recommended`, 'GET', null);
+        setLikes(response); // Assuming the response directly contains the array of challenges
+      } catch (error) {
+        console.error('Failed to fetch recommended challenges: ', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendedChallenges();
   }, [isOpen]);
 
   return (
@@ -765,6 +783,16 @@ function PointsModal({ isOpen, setIsOpen, points }) {
                       <p className="text-lg">You did not receive any new badges.</p>
                       <h1 className="text-xl mt-2 font-semibold">REWARD SUMMARY</h1>
                       <p className="text-lg"><span className="text-green-500">+{points}</span> points</p>
+                    </div>
+                  </div>
+                  <div className="text-center mt-5">
+                    <h1 className="text-2xl">Recommended Challenges</h1>
+                    <div className='mt-4 flex flex-col md:flex-row lg:flex-col xl:flex-row justify-between gap-4 w-full'>
+                      {loading ? <><ChallengeCard /><ChallengeCard /></> : (
+                        likes?.length > 0 ?
+                          likes.map((challenge, index) => <ChallengeCard challenge={challenge} />)
+                          : <><ChallengeCard /><ChallengeCard /></>
+                      )}
                     </div>
                   </div>
                 </Dialog.Panel>
